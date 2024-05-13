@@ -1,0 +1,64 @@
+﻿@page "/"
+@using ResumeAI.Models
+@inject IHttpClientFactory ClientFactory;
+
+
+<PageTitle>Candidate List</PageTitle>
+
+<h1>List Of Candidates</h1>
+
+@if (_loading)
+{
+    <h2>Loading</h2>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+        <th>Name</th>
+        <th>Profession</th>
+        <th>Years of Experience</th>
+        <th>Skills</th>
+        </thead>
+        <tbody>
+        @foreach (var candidate in _candidates)
+        {
+            <tr>
+                <td><NavLink href="@($"details/{candidate.Id}")">@candidate.CandidateName</NavLink></td>
+                <td>@candidate.Profession</td>
+                <td>@candidate.YearsOfCommercialExperience</td>
+                <td>@string.Join(", ", candidate.Skills)</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code
+{
+    private bool _loading = true;
+    private readonly List<ResumeDetailsDto> _candidates = new List<ResumeDetailsDto>();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadResumes();
+        
+        StateHasChanged();
+    }
+
+    private async Task LoadResumes()
+    {
+        _candidates.Clear();
+
+        var client = ClientFactory.CreateClient();
+
+        var response = await client.GetFromJsonAsync<List<ResumeDetailsDto>>("http://localhost:5140/Resume");
+
+        if (response != null)
+        {
+            _candidates.AddRange(response);
+        }
+
+        _loading = false;
+    }
+}

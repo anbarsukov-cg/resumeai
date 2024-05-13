@@ -1,0 +1,54 @@
+﻿@page "/upload"
+@using System.Net.Http.Headers
+@rendermode InteractiveServer
+@inject IHttpClientFactory ClientFactory;
+
+<PageTitle>Upload New Resume</PageTitle>
+
+
+
+@if (_loading)
+{
+    <h2>Please wait, processing</h2>
+    
+    <div class="progress" role="progressbar" aria-label="Animated striped example" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+    </div>
+}
+else
+{
+    <h1>Upload New Resume</h1>
+
+    <div class="input-group mb-3">
+        <InputFile class="form-control" OnChange="LoadFiles" />
+        <label class="input-group-text" for="inputGroupFile02">Upload</label>
+    </div>    
+}
+
+
+@code {
+    private IBrowserFile _file;
+    private bool _loading = false;
+    
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        _loading = true;
+        long maxFileSize = 1024 * 1024 * 15;
+        
+        _file = e.File;
+
+        using var content = new MultipartFormDataContent();
+
+        var fileContent = new StreamContent(_file.OpenReadStream(maxFileSize));
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(_file.ContentType);
+        content.Add(
+            content: fileContent,
+            name: "\"files\"",
+            fileName: _file.Name);
+
+        using var client = ClientFactory.CreateClient();
+
+        var response = await client.PostAsync("http://localhost:5140/Upload", content);
+        _loading = false;
+    }
+}

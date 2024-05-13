@@ -1,0 +1,6 @@
+@ResumeAI.WebAPI_HostAddress = http://localhost:5140
+
+GET {{ResumeAI.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

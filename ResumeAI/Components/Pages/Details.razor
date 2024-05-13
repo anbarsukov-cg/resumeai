@@ -1,0 +1,54 @@
+@page "/Details/{resumeId:guid}"
+@using ResumeAI.Models
+@inject IHttpClientFactory ClientFactory;
+
+
+
+
+@if (_loading)
+{
+    <PageTitle>Loading....</PageTitle>
+    <h3>Please wait, loading details...</h3>
+}
+else
+{
+    <PageTitle>@_details.CandidateName</PageTitle>
+    
+    <h3>@($"{_details.CandidateName} - {_details.Profession}")</h3>
+    <p>Years of commercial experience: @_details.YearsOfCommercialExperience</p>
+    <h4>Key Skills</h4>
+    <ul>
+        @foreach (var skill in _details.Skills)
+        {
+            <li>@skill</li>
+        }
+    </ul>
+    <h4>Summary</h4>
+    <p>@_details.Summary</p>
+}
+
+@code {
+    [Parameter]
+    public Guid ResumeId { get; set; }
+    
+    private bool _loading = true;
+
+    private ResumeDetailsDto _details;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDetails();
+        
+        StateHasChanged();
+    }
+
+    private async Task LoadDetails()
+    {
+        var client = ClientFactory.CreateClient();
+
+        _details = await client.GetFromJsonAsync<ResumeDetailsDto>($"http://localhost:5140/Resume/{ResumeId}");
+
+        _loading = false;
+    }
+
+}
