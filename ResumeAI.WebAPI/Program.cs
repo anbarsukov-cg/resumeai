@@ -11,7 +11,10 @@ builder.Services.AddControllers();
 
 builder.Services.AddLanguageModel();
 builder.Services.AddPostgres();
-builder.Services.AddScoped<ResumeService>();
+builder.Services.AddTransient<VectorStoreCollectionProvider>();
+builder.Services.AddSingleton<IMessageHistoryStore, InMemoryMessageHistoryStore>();
+builder.Services.AddScoped<ResumeImportService>();
+builder.Services.AddScoped<ChatService>();
 
 
 

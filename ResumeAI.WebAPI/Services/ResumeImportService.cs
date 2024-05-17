@@ -15,7 +15,7 @@ using static LangChain.Chains.Chain;
 
 namespace ResumeAI.WebAPI.Services;
 
-public class ResumeService
+public class ResumeImportService
 {
     private static string _pretifyTemplate = @"
     You are a helpful tool that can prettify text. You will be provided a single line of text with the result of parsing of a resume in PDF format.
@@ -48,14 +48,14 @@ Provided resume:
     
     private readonly IChatModel _model;
     private readonly ResumeContext _context;
-    private readonly IVectorDatabase _vectorStore;
+    private readonly VectorStoreCollectionProvider _collectionProvider;
     private readonly IEmbeddingModel _embeddingModel;
 
-    public ResumeService(IChatModel model, ResumeContext context, IVectorDatabase vectorStore, IEmbeddingModel embeddingModel)
+    public ResumeImportService(IChatModel model, ResumeContext context, VectorStoreCollectionProvider collectionProvider, IEmbeddingModel embeddingModel)
     {
         _model = model;
         _context = context;
-        _vectorStore = vectorStore;
+        _collectionProvider = collectionProvider;
         _embeddingModel = embeddingModel;
     }
 
@@ -88,14 +88,12 @@ Provided resume:
             .SplitText(content)
             .Select((chunk, number) => new Document(chunk, new Dictionary<string, object>()
             {
-                { "resumeId", entry.Entity.Id.ToString() },
-                { "page", number + 1 }
+                { "resume_id", entry.Entity.Id.ToString() },
+                { "page", number + 1 },
+                {"candidate_name", entry.Entity.CandidateName}
             })).ToList();
 
-        var vectorCollection = await _vectorStore.GetOrCreateCollectionAsync(
-            collectionName: "langchain",
-            dimensions: 1536, 
-            cancellationToken: token);
+        var vectorCollection = await _collectionProvider.GetDefaultCollectionAsync(token);
 
         await vectorCollection.AddDocumentsAsync(
             embeddingModel: _embeddingModel,

@@ -9,18 +9,18 @@ namespace ResumeAI.WebAPI.Controllers;
 [Route("[controller]")]
 public class UploadController : ControllerBase
 {
-    private ResumeService _resumeService;
+    private ResumeImportService _resumeImportService;
 
-    public UploadController(ResumeService resumeService)
+    public UploadController(ResumeImportService resumeImportService)
     {
-        _resumeService = resumeService;
+        _resumeImportService = resumeImportService;
     }
 
     [HttpPost]
     public async Task<ActionResult<ResumeDetailsDto>> UploadFile([FromForm] IEnumerable<IFormFile> files)
     {
         var file = files.First();
-        var imported = await _resumeService.ImportResumeFromStream(file.OpenReadStream());
+        var imported = await _resumeImportService.ImportResumeFromStream(file.OpenReadStream());
         
         return Created("", imported);
     }

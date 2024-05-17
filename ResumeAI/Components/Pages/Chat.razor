@@ -1,0 +1,124 @@
+@page "/Chat"
+@rendermode InteractiveServer
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@using ResumeAI.Models
+@inject IHttpClientFactory ClientFactory;
+
+<PageTitle>Chat</PageTitle>
+
+<h3>Chat</h3>
+
+<div class="container">
+    <div class="commandsContainer">
+        <div class="container"></div>
+    </div>
+    <div class="chatRoot">
+        <div class="chatContainer">
+            <div class="chatMessageStream" @ref="ChatDivReference">
+                @foreach (var message in _messages)
+                {
+                    <div class="container">
+                        <Message Content="@message.Request" />
+                        <div class="chatMessageGpt">
+                            <ChatAnswer Content="@message.Response"/>
+                        </div>
+                    </div>
+                }
+                @if (_isLoading)
+                {
+                    <div class="container">
+                        <Message Content="@_lastUserMessage" />
+                        <div class="chatMessageGptMinWidtht">
+                            <ChatAnswerLoading/>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="chatInput">
+                <div class="hstack gap-md-4 questionInputContainer">
+                    <input class="form-control" @bind="CurrentMessage" @onkeydown="@OnEnterPress" disabled="@_isLoading"/>
+                    <button class="btn btn-primary" type="submit" disabled="@_isLoading" @onclick="AddMessage"><span class="bi bi-send-fill"></span>Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    function scrollToEnd(div) {
+        console.log("I am here");
+        window.scrollTo(0, document.body.scrollHeight);
+        div.scrollTo(0, div.scrollHeight);
+    }
+</script>
+
+@code {
+
+    private readonly List<ChatExchange> _messages = new List<ChatExchange>();
+
+    private Guid _chatId = Guid.NewGuid();
+    
+    private bool _isLoading;
+
+    private string CurrentMessage { get; set; }
+    private string _lastUserMessage { get; set; }
+    
+    private ElementReference ChatDivReference;
+
+
+    private async Task OnEnterPress(KeyboardEventArgs eventArgs)
+    {
+        if (eventArgs.Key == "Enter")
+        {
+            await AddMessage();
+        }
+    }
+
+    private async Task AddMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(CurrentMessage))
+        {
+            _lastUserMessage = CurrentMessage;
+            CurrentMessage = string.Empty;
+            _isLoading = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("scrollToEnd", [ChatDivReference]);
+            var response = await GetResponse(_lastUserMessage);
+            
+            _messages.Add(new ChatExchange() { Request = _lastUserMessage, Response = response });
+            CurrentMessage = string.Empty;
+            _isLoading = false;
+            _lastUserMessage = string.Empty;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("scrollToEnd", [ChatDivReference]);
+        }
+    }
+
+    private async Task<string> GetResponse(string userMessage)
+    {
+        using var client = ClientFactory.CreateClient();
+
+        var response = await client.PostAsJsonAsync($"http://localhost:5140/Chat/{_chatId}", new ChatRequestDto() { Prompt = userMessage });
+
+        var parsed = await response.Content.ReadFromJsonAsync<ChatResponseDto>();
+
+        return parsed?.ResponseText ?? "Something went wrong";
+    }
+
+    private class ChatExchange
+    {
+        public string Request { get; init; }
+        public string Response { get; set; }
+    }
+    
+    public class ChatRequestDto
+    {
+        public string Prompt { get; set; }
+    }
+    
+    public class ChatResponseDto
+    {
+        public string ResponseText { get; set; }
+    }
+}

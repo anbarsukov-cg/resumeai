@@ -4,6 +4,7 @@ using LangChain.Providers;
 using LangChain.Providers.OpenAI;
 using LangChain.Providers.OpenAI.Predefined;
 using Microsoft.EntityFrameworkCore;
+using OpenAI.Constants;
 using ResumeAI.WebAPI.Data;
 
 namespace ResumeAI.WebAPI;
@@ -18,7 +19,18 @@ public static class ServiceCollectionExtensions
             var apiKey = config.GetSection("OpenAI").Get<OpenAiConfiguration>()?.ApiKey ?? throw new Exception("OpenAI Api Key is Required");
             return new OpenAiProvider(apiKey);
         });
-        services.AddTransient<IChatModel>(s => new Gpt35TurboModel(s.GetRequiredService<OpenAiProvider>()).UseConsoleForDebug());
+        services.AddTransient<IChatModel>(s =>
+        {
+            var openAiProvider = s.GetRequiredService<OpenAiProvider>();
+            var model = new OpenAiChatModel(openAiProvider, ChatModels.Gpt35Turbo)
+            {
+                Settings = new ChatSettings()
+                {
+                    StopSequences = new[] { "Observation", "[END]" }
+                }
+            };
+            return model.UseConsoleForDebug();
+        });
 
         services.AddTransient<IEmbeddingModel>(
             s => new TextEmbeddingAda002Model(s.GetRequiredService<OpenAiProvider>()));

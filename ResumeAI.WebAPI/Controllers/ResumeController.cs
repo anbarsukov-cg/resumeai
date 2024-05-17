@@ -8,24 +8,24 @@ namespace ResumeAI.WebAPI.Controllers;
 [Route("[controller]")]
 public class ResumeController: ControllerBase
 {
-    private ResumeService _resumeService;
+    private ResumeImportService _resumeImportService;
 
-    public ResumeController(ResumeService resumeService)
+    public ResumeController(ResumeImportService resumeImportService)
     {
-        _resumeService = resumeService;
+        _resumeImportService = resumeImportService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ResumeDetailsDto>>> GetAll(CancellationToken token = default)
     {
-        var list = await _resumeService.GetAllAsync(token);
+        var list = await _resumeImportService.GetAllAsync(token);
         return Ok(list);
     }
     
     [HttpGet("{id}")]
     public async Task<ActionResult<ResumeDetailsDto>> GetById([FromRoute]Guid id, CancellationToken token = default)
     {
-        var res = await _resumeService.GetByIdAsync(id, token);
+        var res = await _resumeImportService.GetByIdAsync(id, token);
         return res == null ? NotFound() : Ok(res);
     }
     
